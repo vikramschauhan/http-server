@@ -28,7 +28,7 @@ func main() {
 	}
 	firstLine := strings.Split(string(requestData), "\r\n")[0]
 	pathString := strings.Split(firstLine, " ")[1]
-	if pathString[0] == '/' {
+	if pathString[1] == '/' {
 		response := []byte("HTTP/1.1 200 OK\r\n\r\n")
 		conn.Write(response)
 	} else {
