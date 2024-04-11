@@ -26,9 +26,10 @@ func main() {
 	if err != nil {
 		fmt.Println("Error while reading from the connection:", err.Error())
 	}
-	firstLine := strings.Split(string(requestData), "\r\n")[0]
-	pathString := strings.Split(firstLine, " ")[1]
-	if pathString[0] == '/' {
+	requestString := string(requestData)
+	httpMethod := strings.Split(requestString, "\r\n")[0]
+	pathString := strings.Split(httpMethod, " ")
+	if string(pathString[1]) == "/" {
 		response := []byte("HTTP/1.1 200 OK\r\n\r\n")
 		conn.Write(response)
 	} else {
