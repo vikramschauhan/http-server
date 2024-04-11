@@ -24,7 +24,7 @@ func main() {
 	requestData := make([]byte, 1024)
 	_, err = conn.Read(requestData)
 	if err != nil {
-		fmt.Println("Error while reading from the connection: ", err.Error())
+		fmt.Println("Error while reading from the connection:", err.Error())
 	}
 	firstLine := strings.Split(string(requestData), "\r\n")[0]
 	pathString := strings.Split(firstLine, " ")[1]
