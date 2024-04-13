@@ -30,8 +30,8 @@ func main() {
 	requestString := string(requestData)
 	httpMethod := strings.Split(requestString, "\r\n")[0]
 	pathString := strings.Split(httpMethod, " ")
-	content := strings.TrimSpace(pathString[1][6:])
 	if strings.HasPrefix(pathString[1], "/echo/") {
+		content := strings.TrimSpace(pathString[1][6:])
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n" + "Content-Type: text/plain\r\n" + "Content-Length:" + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
