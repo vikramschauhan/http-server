@@ -32,9 +32,10 @@ func main() {
 	pathString := strings.Split(httpMethod, " ")[1]
 	if pathString == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
-	} else if strings.HasPrefix(pathString, "/echo/") {
-		content := strings.TrimSpace(pathString[6:])
-		conn.Write([]byte("HTTP/1.1 200 OK\r\n" + "Content-Type: text/plain\r\n" + "Content-Length:" + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
+	} else if strings.HasPrefix(pathString, "/") {
+		content := strings.TrimSpace(pathString[0:])
+		userAgent := strings.Split(requestString, "\r\n")[2]
+		conn.Write([]byte("HTTP/1.1 200 OK\r\n" + "Content-Type: text/plain\r\n" + "Content-Length:" + strconv.Itoa(len(content)) + "\r\n\r\n" + userAgent[12:]))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
