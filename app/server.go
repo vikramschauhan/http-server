@@ -30,9 +30,7 @@ func main() {
 	requestString := string(requestData)
 	httpMethod := strings.Split(requestString, "\r\n")[0]
 	pathString := strings.Split(httpMethod, " ")[1]
-	if pathString == "/" {
-		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
-	} else if strings.HasPrefix(pathString, "/") {
+	if strings.HasPrefix(pathString, "/user-agent") {
 		content := strings.TrimSpace(pathString[0:])
 		userAgent := strings.Split(requestString, "\r\n")[2]
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n" + "Content-Type: text/plain\r\n" + "Content-Length:" + strconv.Itoa(len(content)) + "\r\n\r\n" + userAgent[12:]))
