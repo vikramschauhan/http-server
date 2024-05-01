@@ -38,6 +38,7 @@ func handleRequest(conn net.Conn) {
 	}
 	requestString := string(requestData)
 	httpMethod := strings.Split(requestString, "\r\n")[0]
+
 	pathString := strings.Split(httpMethod, " ")[1]
 	if pathString == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
