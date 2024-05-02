@@ -24,7 +24,6 @@ func main() {
 	}
 	for {
 		conn, err := l.Accept()
-		fmt.Println("Test..")
 		if err != nil {
 			fmt.Println("Error accepting connection : ", err.Error())
 			os.Exit(1)
@@ -46,13 +45,12 @@ func handleRequest(conn net.Conn) {
 	if pathString == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 	} else if strings.HasPrefix(pathString, "/files/") && len(dirPath) > 0 {
-		//fmt.Println("dirPath :: ", dirPath)
-		contents, err := ioutil.ReadFile(dirPath)
+		fileName := strings.TrimPrefix(pathString, "/files/")
+		contents, err := ioutil.ReadFile(dirPath + string(os.PathSeparator) + fileName)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 		}
 		content := string(contents)
-		//fmt.Println("content :: ", content)
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n" + "Content-Type: application/octet-stream\r\n" + "Content-Length:" + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
 		return
 	} else if strings.HasPrefix(pathString, "/echo/") {
