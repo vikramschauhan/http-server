@@ -3,15 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 )
 
+var dirPath string
+
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
+	flag.StringVar(&dirPath, "directory", ".", "Directory path")
+	flag.Parse()
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221")
@@ -19,6 +24,7 @@ func main() {
 	}
 	for {
 		conn, err := l.Accept()
+		fmt.Println("Test..")
 		if err != nil {
 			fmt.Println("Error accepting connection : ", err.Error())
 			os.Exit(1)
@@ -27,10 +33,7 @@ func main() {
 	}
 }
 func handleRequest(conn net.Conn) {
-	var dirPath string
-	flag.StringVar(&dirPath, "directory", ".", "Directory path")
-	flag.Parse()
-
+	defer conn.Close()
 	requestData := make([]byte, 1024)
 	_, err := conn.Read(requestData)
 	if err != nil {
@@ -43,12 +46,15 @@ func handleRequest(conn net.Conn) {
 	if pathString == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 	} else if strings.HasPrefix(pathString, "/files/") && len(dirPath) > 0 {
-		contents, err := os.ReadFile(dirPath)
+		//fmt.Println("dirPath :: ", dirPath)
+		contents, err := ioutil.ReadFile(dirPath)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 		}
 		content := string(contents)
+		//fmt.Println("content :: ", content)
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n" + "Content-Type: application/octet-stream\r\n" + "Content-Length:" + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
+		return
 	} else if strings.HasPrefix(pathString, "/echo/") {
 		content := strings.TrimSpace(pathString[6:])
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n" + "Content-Type: text/plain\r\n" + "Content-Length:" + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
@@ -58,5 +64,4 @@ func handleRequest(conn net.Conn) {
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
-	return
 }
