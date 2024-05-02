@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/codecrafters-io/http-server-starter-go/constants"
 	"io/ioutil"
 	"net"
 	"os"
@@ -43,23 +44,23 @@ func handleRequest(conn net.Conn) {
 
 	pathString := strings.Split(httpMethod, " ")[1]
 	if pathString == "/" {
-		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+		conn.Write([]byte(constants.OKResponse + "\r\n\r\n"))
 	} else if strings.HasPrefix(pathString, "/files/") && len(dirPath) > 0 {
 		fileName := strings.TrimPrefix(pathString, "/files/")
 		contents, err := ioutil.ReadFile(dirPath + string(os.PathSeparator) + fileName)
 		if err != nil {
-			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+			conn.Write([]byte(constants.NotFoundResponse + "\r\n\r\n"))
 		}
 		content := string(contents)
-		conn.Write([]byte("HTTP/1.1 200 OK\r\n" + "Content-Type: application/octet-stream\r\n" + "Content-Length:" + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
+		conn.Write([]byte(constants.OKResponse + "\r\n" + constants.ContentTypeKey + constants.OctetStream + "\r\n" + constants.ContentLengthKey + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
 		return
 	} else if strings.HasPrefix(pathString, "/echo/") {
 		content := strings.TrimSpace(pathString[6:])
-		conn.Write([]byte("HTTP/1.1 200 OK\r\n" + "Content-Type: text/plain\r\n" + "Content-Length:" + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
+		conn.Write([]byte(constants.OKResponse + "\r\n" + constants.ContentTypeKey + constants.TextPlain + "\r\n" + constants.ContentLengthKey + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
 	} else if strings.HasPrefix(pathString, "/user-agent") {
 		userAgent := strings.Split(requestString, "\r\n")[2]
-		conn.Write([]byte("HTTP/1.1 200 OK\r\n" + "Content-Type: text/plain\r\n" + "Content-Length:" + strconv.Itoa(len(userAgent[12:])) + "\r\n\r\n" + userAgent[12:]))
+		conn.Write([]byte(constants.OKResponse + "\r\n" + constants.ContentTypeKey + constants.TextPlain + "\r\n" + constants.ContentLengthKey + strconv.Itoa(len(userAgent[12:])) + "\r\n\r\n" + userAgent[12:]))
 	} else {
-		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+		conn.Write([]byte(constants.NotFoundResponse + "\r\n\r\n"))
 	}
 }
