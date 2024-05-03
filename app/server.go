@@ -14,8 +14,6 @@ import (
 var dirPath string
 
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Println("Logs from your program will appear here!")
 	flag.StringVar(&dirPath, "directory", ".", "Directory path")
 	flag.Parse()
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
@@ -36,31 +34,74 @@ func handleRequest(conn net.Conn) {
 	defer conn.Close()
 	requestData := make([]byte, 1024)
 	_, err := conn.Read(requestData)
+
 	if err != nil {
 		fmt.Println("Error while reading from the connection:", err.Error())
 	}
 	requestString := string(requestData)
-	httpMethod := strings.Split(requestString, "\r\n")[0]
+	if strings.HasPrefix(requestString, "POST") {
+		handlePostRequest(conn, requestString)
+	} else {
+		handleGetRequest(conn, requestString)
+	}
+}
 
-	pathString := strings.Split(httpMethod, " ")[1]
+func handlePostRequest(conn net.Conn, requestString string) {
+	pathString := getPathString(requestString)
+	requestBody := strings.Split(requestString, "\r\n")[6]
+	if strings.HasPrefix(pathString, "/files/") && len(dirPath) > 0 {
+		err := writeFileContents(pathString, requestBody)
+		if err != nil {
+			writeResponse(conn, constants.NotFoundResponse, "", "")
+		}
+		writeResponse(conn, constants.CreatedResponse, "", "")
+	} else {
+		writeResponse(conn, constants.NotFoundResponse, "", "")
+	}
+}
+
+func handleGetRequest(conn net.Conn, requestString string) {
+	pathString := getPathString(requestString)
 	if pathString == "/" {
 		conn.Write([]byte(constants.OKResponse + "\r\n\r\n"))
 	} else if strings.HasPrefix(pathString, "/files/") && len(dirPath) > 0 {
-		fileName := strings.TrimPrefix(pathString, "/files/")
-		contents, err := ioutil.ReadFile(dirPath + string(os.PathSeparator) + fileName)
+		content, err := getFileContents(pathString)
 		if err != nil {
-			conn.Write([]byte(constants.NotFoundResponse + "\r\n\r\n"))
+			writeResponse(conn, constants.NotFoundResponse, "", "")
 		}
-		content := string(contents)
-		conn.Write([]byte(constants.OKResponse + "\r\n" + constants.ContentTypeKey + constants.OctetStream + "\r\n" + constants.ContentLengthKey + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
-		return
+		writeResponse(conn, constants.OKResponse, constants.OctetStream, content)
 	} else if strings.HasPrefix(pathString, "/echo/") {
-		content := strings.TrimSpace(pathString[6:])
-		conn.Write([]byte(constants.OKResponse + "\r\n" + constants.ContentTypeKey + constants.TextPlain + "\r\n" + constants.ContentLengthKey + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
+		writeResponse(conn, constants.OKResponse, constants.TextPlain, strings.TrimSpace(pathString[6:]))
 	} else if strings.HasPrefix(pathString, "/user-agent") {
 		userAgent := strings.Split(requestString, "\r\n")[2]
-		conn.Write([]byte(constants.OKResponse + "\r\n" + constants.ContentTypeKey + constants.TextPlain + "\r\n" + constants.ContentLengthKey + strconv.Itoa(len(userAgent[12:])) + "\r\n\r\n" + userAgent[12:]))
+		writeResponse(conn, constants.OKResponse, constants.TextPlain, userAgent[12:])
 	} else {
-		conn.Write([]byte(constants.NotFoundResponse + "\r\n\r\n"))
+		writeResponse(conn, constants.NotFoundResponse, "", "")
+	}
+}
+
+func getPathString(requestString string) string {
+	httpMethod := strings.Split(requestString, "\r\n")[0]
+	return strings.Split(httpMethod, " ")[1]
+}
+
+func getFileContents(pathString string) (string, error) {
+	contents, err := ioutil.ReadFile(getFilePath(pathString))
+	return string(contents), err
+}
+
+func writeFileContents(pathString string, content string) error {
+	return ioutil.WriteFile(getFilePath(pathString), []byte(strings.TrimRight(content, "\x00")), 0644)
+}
+
+func getFilePath(pathString string) string {
+	fileName := strings.TrimPrefix(pathString, "/files/")
+	return dirPath + string(os.PathSeparator) + fileName
+}
+func writeResponse(conn net.Conn, response string, contentType string, content string) {
+	if response == constants.OKResponse {
+		conn.Write([]byte(response + "\r\n" + constants.ContentTypeKey + contentType + "\r\n" + constants.ContentLengthKey + strconv.Itoa(len(content)) + "\r\n\r\n" + content))
+	} else {
+		conn.Write([]byte(response + "\r\n\r\n"))
 	}
 }
